@@ -9,9 +9,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Em um cenário real, aqui seria feito o checkout do Git
-                // checkout scm
-                echo "Simulando Checkout do código..."
+                echo "Realizando checkout do Git..."
+                checkout scm
             }
         }
         
@@ -39,10 +38,24 @@ pipeline {
             }
         }
 
-        stage('Deploy (Simulado)') {
+        stage('Deploy Local') {
             steps {
-                echo "Simulando deploy da imagem: ${DOCKER_IMAGE}:${DOCKER_TAG}"
-                // Em produção, isso poderia ser um push para um registry ou deploy em um orquestrador (ex: K8s)
+                echo "Realizando deploy local da imagem: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                script {
+                    if (isUnix()) {
+                        sh '''
+                        docker stop app-teste-container || true
+                        docker rm app-teste-container || true
+                        docker run -d -p 3000:8000 --name app-teste-container ${DOCKER_IMAGE}:latest
+                        '''
+                    } else {
+                        bat '''
+                        docker stop app-teste-container 2>NUL || echo "Nenhum container rodando"
+                        docker rm app-teste-container 2>NUL || echo "Nenhum container para remover"
+                        docker run -d -p 3000:8000 --name app-teste-container %DOCKER_IMAGE%:latest
+                        '''
+                    }
+                }
             }
         }
     }
